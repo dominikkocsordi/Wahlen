@@ -5,6 +5,7 @@ enum PresentationState: Equatable, Sendable {
     case ballotPreview(sessionId: UUID)
     case open(sessionId: UUID)
     case decrypting(sessionId: UUID)
+    case counting(sessionId: UUID)
     case verifying(sessionId: UUID)
     case results(sessionId: UUID)
 
@@ -12,7 +13,7 @@ enum PresentationState: Equatable, Sendable {
         switch self {
         case .idle: return nil
         case .ballotPreview(let id), .open(let id), .decrypting(let id),
-             .verifying(let id), .results(let id):
+             .counting(let id), .verifying(let id), .results(let id):
             return id
         }
     }
@@ -22,7 +23,8 @@ enum PresentationState: Equatable, Sendable {
         case .idle: return "Bereit"
         case .ballotPreview: return "Wahlzettel"
         case .open: return "Offen"
-        case .decrypting: return "Auszählung"
+        case .decrypting: return "Entschlüsselung"
+        case .counting: return "Auszählung"
         case .verifying: return "Prüfung"
         case .results: return "Ergebnis"
         }

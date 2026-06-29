@@ -50,6 +50,8 @@ struct BeamerWindow: View {
                 }
             case .decrypting:
                 DecryptingView()
+            case .counting(let id):
+                VotingProcessingView(state: .counting(sessionId: id))
             case .verifying:
                 VerifyingView()
             case .results(let id):

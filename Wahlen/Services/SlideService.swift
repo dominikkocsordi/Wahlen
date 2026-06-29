@@ -4,6 +4,10 @@ import PDFKit
 import AppKit
 import UniformTypeIdentifiers
 
+enum SlideNavigationDirection {
+    case forward, backward, none
+}
+
 @MainActor
 @Observable
 final class SlideService {
@@ -12,6 +16,7 @@ final class SlideService {
     private(set) var document: PDFDocument?
     private(set) var documentName: String?
     var currentIndex: Int = 0
+    private(set) var lastDirection: SlideNavigationDirection = .none
 
     var totalSlides: Int { document?.pageCount ?? 0 }
     var currentSlideNumber: Int { currentIndex + 1 }
@@ -78,20 +83,24 @@ final class SlideService {
 
     func next() {
         guard canGoNext else { return }
+        lastDirection = .forward
         currentIndex += 1
     }
 
     func previous() {
         guard canGoPrevious else { return }
+        lastDirection = .backward
         currentIndex -= 1
     }
 
     func goTo(_ index: Int) {
         guard index >= 0 && index < totalSlides else { return }
+        lastDirection = index > currentIndex ? .forward : .backward
         currentIndex = index
     }
 
     func reset() {
+        lastDirection = .none
         currentIndex = 0
     }
 

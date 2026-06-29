@@ -97,3 +97,15 @@ struct DestructiveButtonStyle: ButtonStyle {
             .foregroundStyle(Theme.background)
     }
 }
+
+struct AnyButtonStyle: ButtonStyle {
+    private let _makeBody: (ButtonStyleConfiguration) -> AnyView
+
+    init<S: ButtonStyle>(_ style: S) {
+        _makeBody = { AnyView(style.makeBody(configuration: $0)) }
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        _makeBody(configuration)
+    }
+}

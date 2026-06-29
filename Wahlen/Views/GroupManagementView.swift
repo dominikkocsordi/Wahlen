@@ -252,8 +252,8 @@ struct GroupManagementView: View {
                                     }
                                 }
                                 .buttonStyle(isAssigned
-                                    ? PrimaryButtonStyle(tint: Theme.turquoise)
-                                    : SecondaryButtonStyle())
+                                    ? AnyButtonStyle(PrimaryButtonStyle(tint: Theme.turquoise))
+                                    : AnyButtonStyle(SecondaryButtonStyle()))
                             }
                         }
                         .padding(.vertical, 4)

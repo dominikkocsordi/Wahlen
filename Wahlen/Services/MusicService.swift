@@ -23,6 +23,7 @@ final class MusicService {
 
     private var buildupPlayer: AVAudioPlayer?
     private var winnerPlayer: AVAudioPlayer?
+    private var introPlayer: AVAudioPlayer?
     private var fadeTask: Task<Void, Never>?
 
     var isEnabled: Bool {
@@ -73,13 +74,43 @@ final class MusicService {
         }
     }
 
+    func playReveal() {
+        playBuildup()
+    }
+
+    func playIntro() {
+        guard isEnabled,
+              let url = Bundle.main.url(forResource: "intro", withExtension: "m4a") else { return }
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.numberOfLoops = 0
+            player.volume = 1.0
+            player.prepareToPlay()
+            player.play()
+            introPlayer = player
+        } catch {
+            introPlayer = nil
+        }
+    }
+
+    func stopIntro() {
+        introPlayer?.stop()
+        introPlayer = nil
+    }
+
+    func introCurrentTime() -> TimeInterval {
+        introPlayer?.currentTime ?? 0
+    }
+
     func stopAll() {
         fadeTask?.cancel()
         fadeTask = nil
         buildupPlayer?.stop()
         winnerPlayer?.stop()
+        introPlayer?.stop()
         buildupPlayer = nil
         winnerPlayer = nil
+        introPlayer = nil
     }
 
     func toggle() {

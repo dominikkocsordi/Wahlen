@@ -33,6 +33,7 @@ final class AdminViewModel {
         case .ballotPreview(let id) where id == session.id: return .ballot
         case .open(let id) where id == session.id: return .open
         case .decrypting(let id) where id == session.id: return .counting
+        case .counting(let id) where id == session.id: return .counting
         case .verifying(let id) where id == session.id: return .verification
         case .results(let id) where id == session.id: return .result
         default:
@@ -130,10 +131,13 @@ final class AdminViewModel {
         transitionTask?.cancel()
         store.presentationState = .decrypting(sessionId: sessionId)
         transitionTask = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(4))
+            try? await Task.sleep(for: .seconds(MontageTiming.decryptingDuration))
+            guard !Task.isCancelled else { return }
+            self.store.presentationState = .counting(sessionId: sessionId)
+            try? await Task.sleep(for: .seconds(MontageTiming.countingDuration))
             guard !Task.isCancelled else { return }
             self.store.presentationState = .verifying(sessionId: sessionId)
-            try? await Task.sleep(for: .seconds(3))
+            try? await Task.sleep(for: .seconds(MontageTiming.verifyingDuration))
             guard !Task.isCancelled else { return }
             self.store.presentationState = .results(sessionId: sessionId)
         }
