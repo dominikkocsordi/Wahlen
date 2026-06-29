@@ -49,7 +49,14 @@ final class AgendaService {
     }
 
     func move(from source: IndexSet, to destination: Int) {
-        items.move(fromOffsets: source, toOffset: destination)
+        var result = items
+        let sorted = source.sorted(by: >)
+        var moved: [AgendaItem] = sorted.map { result[$0] }
+        for index in sorted { result.remove(at: index) }
+        moved.reverse()
+        let insertAt = min(destination, result.count)
+        result.insert(contentsOf: moved, at: insertAt)
+        items = result
         reindex()
         save()
     }
