@@ -12,6 +12,7 @@ struct VoteSession: Identifiable, Codable, Hashable, Sendable {
     var allowDelegation: Bool
     var isValid: Bool?
     var groupId: UUID?
+    var requiresAbsoluteMajority: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -25,6 +26,7 @@ struct VoteSession: Identifiable, Codable, Hashable, Sendable {
         case allowDelegation = "allow_delegation"
         case isValid = "is_valid"
         case groupId = "group_id"
+        case requiresAbsoluteMajority = "requires_absolute_majority"
     }
 
     init(id: UUID,
@@ -37,7 +39,8 @@ struct VoteSession: Identifiable, Codable, Hashable, Sendable {
          resultsVisible: Bool = false,
          allowDelegation: Bool = false,
          isValid: Bool? = nil,
-         groupId: UUID? = nil) {
+         groupId: UUID? = nil,
+         requiresAbsoluteMajority: Bool = false) {
         self.id = id
         self.token = token
         self.title = title
@@ -49,6 +52,7 @@ struct VoteSession: Identifiable, Codable, Hashable, Sendable {
         self.allowDelegation = allowDelegation
         self.isValid = isValid
         self.groupId = groupId
+        self.requiresAbsoluteMajority = requiresAbsoluteMajority
     }
 
     init(from decoder: Decoder) throws {
@@ -64,6 +68,7 @@ struct VoteSession: Identifiable, Codable, Hashable, Sendable {
         self.allowDelegation = try container.decodeIfPresent(Bool.self, forKey: .allowDelegation) ?? false
         self.isValid = try container.decodeIfPresent(Bool.self, forKey: .isValid)
         self.groupId = try container.decodeIfPresent(UUID.self, forKey: .groupId)
+        self.requiresAbsoluteMajority = try container.decodeIfPresent(Bool.self, forKey: .requiresAbsoluteMajority) ?? false
     }
 
     private static func decodeOptions(container: KeyedDecodingContainer<CodingKeys>) -> [String] {

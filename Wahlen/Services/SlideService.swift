@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import PDFKit
 import AppKit
+import UniformTypeIdentifiers
 
 @MainActor
 @Observable
