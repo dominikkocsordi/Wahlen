@@ -127,6 +127,39 @@ final class ElectionService {
         try await updateStatus(sessionId: sessionId, status: SessionStatus.archived)
     }
 
+    struct UpdateSessionPayload: Encodable {
+        let title: String
+        let options: [String]
+        let participant_limit: Int?
+        let results_visible: Bool
+        let allow_delegation: Bool
+    }
+
+    @discardableResult
+    func updateSession(id: UUID,
+                       title: String,
+                       options: [String],
+                       participantLimit: Int?,
+                       allowDelegation: Bool,
+                       resultsVisible: Bool) async throws -> VoteSession {
+        let payload = UpdateSessionPayload(
+            title: title,
+            options: options,
+            participant_limit: participantLimit,
+            results_visible: resultsVisible,
+            allow_delegation: allowDelegation
+        )
+        let updated: [VoteSession] = try await client
+            .from("vote_sessions")
+            .update(payload, returning: .representation)
+            .eq("id", value: id.uuidString)
+            .select()
+            .execute()
+            .value
+        guard let session = updated.first else { throw ElectionError.notFound }
+        return session
+    }
+
     func duplicateSession(_ session: VoteSession) async throws -> VoteSession {
         try await createSession(
             title: session.title + " (Kopie)",
