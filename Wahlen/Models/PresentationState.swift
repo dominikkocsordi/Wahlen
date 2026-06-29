@@ -2,6 +2,8 @@ import Foundation
 
 enum PresentationState: Equatable, Sendable {
     case idle
+    case intro
+    case slides
     case ballotPreview(sessionId: UUID)
     case open(sessionId: UUID)
     case decrypting(sessionId: UUID)
@@ -11,7 +13,7 @@ enum PresentationState: Equatable, Sendable {
 
     var sessionId: UUID? {
         switch self {
-        case .idle: return nil
+        case .idle, .intro, .slides: return nil
         case .ballotPreview(let id), .open(let id), .decrypting(let id),
              .counting(let id), .verifying(let id), .results(let id):
             return id
@@ -21,6 +23,8 @@ enum PresentationState: Equatable, Sendable {
     var label: String {
         switch self {
         case .idle: return "Bereit"
+        case .intro: return "Intro"
+        case .slides: return "Folien"
         case .ballotPreview: return "Wahlzettel"
         case .open: return "Offen"
         case .decrypting: return "Entschlüsselung"

@@ -36,6 +36,10 @@ struct BeamerWindow: View {
             switch store.presentationState {
             case .idle:
                 StartView()
+            case .intro:
+                IntroView()
+            case .slides:
+                SlidesBeamerView()
             case .ballotPreview(let id):
                 if let session = store.session(id: id) {
                     BallotPreviewView(session: session)

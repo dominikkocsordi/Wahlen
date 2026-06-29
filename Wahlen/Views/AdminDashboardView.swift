@@ -5,6 +5,8 @@ struct AdminDashboardView: View {
     @State private var store = ElectionStore.shared
     @State private var deleteCandidate: VoteSession?
     @State private var groups: [VoterGroup] = []
+    @State private var slides = SlideService.shared
+    @State private var showAgendaSheet = false
 
     var body: some View {
         NavigationSplitView {
@@ -28,6 +30,9 @@ struct AdminDashboardView: View {
             CreateElectionView { session in
                 viewModel.selectedSessionId = session.id
             }
+        }
+        .sheet(isPresented: $showAgendaSheet) {
+            AgendaManagementView()
         }
         .alert("Wahl löschen?",
                isPresented: Binding(
@@ -58,11 +63,15 @@ struct AdminDashboardView: View {
     private var sidebar: some View {
         VStack(spacing: 0) {
             sidebarHeader
+            programSection
+            Divider().background(Theme.divider)
 
             if store.isLoading && store.sessions.isEmpty {
                 ProgressView()
                     .controlSize(.large)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if store.loadError != nil && store.sessions.isEmpty {
+                connectionErrorView
             } else {
                 List(selection: $viewModel.selectedSessionId) {
                     Section {
@@ -82,6 +91,146 @@ struct AdminDashboardView: View {
             }
         }
         .background(Theme.background)
+    }
+
+    private var programSection: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("PROGRAMM")
+                    .font(AppFont.body(11, weight: .semibold))
+                    .tracking(1.2)
+                    .foregroundStyle(Theme.muted)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 14)
+            .padding(.bottom, 8)
+
+            VStack(spacing: 3) {
+                programRow(icon: "film", title: "Intro abspielen",
+                           active: store.presentationState == .intro) {
+                    store.presentationState = .intro
+                }
+
+                programRow(icon: "rectangle.on.rectangle.angled",
+                           title: slides.hasDocument ? "Folien steuern" : "Keine Folien geladen",
+                           active: store.presentationState == .slides) {
+                    if slides.hasDocument {
+                        store.presentationState = .slides
+                    } else {
+                        slides.presentOpenPanel()
+                        if slides.hasDocument { store.presentationState = .slides }
+                    }
+                }
+
+                if store.presentationState == .slides && slides.hasDocument {
+                    slidesNavRow
+                }
+
+                programRow(icon: "list.number", title: "Tagesordnung verwalten",
+                           active: false) {
+                    showAgendaSheet = true
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.bottom, 12)
+        }
+    }
+
+    private var slidesNavRow: some View {
+        HStack(spacing: 8) {
+            Button { slides.previous() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(slides.canGoPrevious ? Theme.white : Theme.muted)
+            .disabled(!slides.canGoPrevious)
+
+            Spacer()
+
+            Text("\(slides.currentSlideNumber) / \(slides.totalSlides)")
+                .font(AppFont.mono(12))
+                .foregroundStyle(Theme.muted)
+
+            Spacer()
+
+            Button { slides.next() } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(slides.canGoNext ? Theme.white : Theme.muted)
+            .disabled(!slides.canGoNext)
+
+            Button { slides.presentOpenPanel() } label: {
+                Image(systemName: "folder.badge.plus")
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Theme.muted)
+            .help("Andere PDF öffnen")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Theme.panelElevated)
+        )
+        .padding(.horizontal, 2)
+    }
+
+    private func programRow(icon: String, title: String, active: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(active ? Theme.turquoise : Theme.white.opacity(0.65))
+                    .frame(width: 22)
+                Text(title)
+                    .font(AppFont.body(13, weight: active ? .semibold : .regular))
+                    .foregroundStyle(active ? Theme.white : Theme.white.opacity(0.8))
+                    .lineLimit(1)
+                Spacer()
+                if active {
+                    Circle()
+                        .fill(Theme.turquoise)
+                        .frame(width: 7, height: 7)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(active ? Theme.panelElevated : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var connectionErrorView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "wifi.exclamationmark")
+                .font(.system(size: 34, weight: .light))
+                .foregroundStyle(Theme.red)
+            Text("Verbindungsfehler")
+                .font(AppFont.body(14, weight: .semibold))
+                .foregroundStyle(Theme.white)
+            Text(store.loadError ?? "")
+                .font(AppFont.body(11))
+                .foregroundStyle(Theme.muted)
+                .multilineTextAlignment(.center)
+                .lineLimit(5)
+                .frame(maxWidth: 260)
+            Button {
+                Task { await store.loadSessions() }
+            } label: {
+                Label("Erneut laden", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(SecondaryButtonStyle())
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var sidebarHeader: some View {
