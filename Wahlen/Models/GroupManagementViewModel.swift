@@ -50,13 +50,38 @@ final class GroupManagementViewModel {
 
     var exportDataString: String {
         guard let selectedGroup else { return "" }
-        let codeList = codes.map { $0.code }.joined(separator: "\n")
-        return "FSBS Wahlen - Codes für Gruppe: \(selectedGroup.name)\n\n\(codeList)"
+        let lines = codes.enumerated().map { i, c in "\(i + 1). \(c.code)\(c.used ? " (verwendet)" : "")" }
+        return "FSBS Wahlen – Codes für Gruppe: \(selectedGroup.name)\n\n" + lines.joined(separator: "\n")
     }
 
     func copyToClipboard() {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(exportDataString, forType: .string)
+    }
+
+    func assignGroup(_ group: VoterGroup, to session: VoteSession?) async {
+        do {
+            try await ElectionService.shared.assignGroup(groupId: group.id, to: session?.id)
+            await loadGroups()
+            if let g = groups.first(where: { $0.id == group.id }) {
+                await selectGroup(g)
+            }
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+
+    func deleteGroup(_ group: VoterGroup) async {
+        do {
+            try await ElectionService.shared.deleteGroup(groupId: group.id)
+            if selectedGroup?.id == group.id {
+                selectedGroup = nil
+                codes = []
+            }
+            await loadGroups()
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
     }
 }

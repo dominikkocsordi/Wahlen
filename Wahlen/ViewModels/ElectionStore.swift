@@ -32,8 +32,12 @@ final class ElectionStore {
             let fetched = try await ElectionService.shared.fetchSessions()
             self.sessions = fetched
             self.loadError = nil
-            for session in fetched {
-                await reloadVotes(for: session.id)
+            // Only eagerly load votes for open sessions; others load on demand.
+            let openSessions = fetched.filter { $0.status == SessionStatus.open }
+            await withTaskGroup(of: Void.self) { group in
+                for session in openSessions {
+                    group.addTask { await self.reloadVotes(for: session.id) }
+                }
             }
         } catch {
             self.loadError = error.localizedDescription

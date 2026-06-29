@@ -136,6 +136,89 @@ final class ElectionService {
             resultsVisible: false
         )
     }
+
+    // MARK: - Groups
+
+    func fetchGroups() async throws -> [VoterGroup] {
+        try await client
+            .from("voter_groups")
+            .select()
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+    }
+
+    func fetchCodes(for groupId: UUID) async throws -> [VoterCode] {
+        try await client
+            .from("voter_codes")
+            .select()
+            .eq("group_id", value: groupId.uuidString)
+            .order("code", ascending: true)
+            .execute()
+            .value
+    }
+
+    struct NewGroupPayload: Encodable {
+        let name: String
+    }
+
+    struct NewCodePayload: Encodable {
+        let group_id: String
+        let code: String
+        let used: Bool
+    }
+
+    @discardableResult
+    func createGroupWithCodes(name: String, codeCount: Int) async throws -> VoterGroup {
+        let inserted: [VoterGroup] = try await client
+            .from("voter_groups")
+            .insert(NewGroupPayload(name: name), returning: .representation)
+            .select()
+            .execute()
+            .value
+        guard let group = inserted.first else { throw ElectionError.creationFailed }
+
+        let codes = (0..<codeCount).map { _ in
+            NewCodePayload(
+                group_id: group.id.uuidString,
+                code: Self.generateCode(),
+                used: false
+            )
+        }
+        try await client
+            .from("voter_codes")
+            .insert(codes)
+            .execute()
+        return group
+    }
+
+    struct GroupSessionPayload: Encodable { let session_id: String? }
+
+    func assignGroup(groupId: UUID, to sessionId: UUID?) async throws {
+        _ = try await client
+            .from("voter_groups")
+            .update(GroupSessionPayload(session_id: sessionId?.uuidString))
+            .eq("id", value: groupId.uuidString)
+            .execute()
+    }
+
+    func deleteGroup(groupId: UUID) async throws {
+        _ = try await client
+            .from("voter_codes")
+            .delete()
+            .eq("group_id", value: groupId.uuidString)
+            .execute()
+        _ = try await client
+            .from("voter_groups")
+            .delete()
+            .eq("id", value: groupId.uuidString)
+            .execute()
+    }
+
+    private static func generateCode() -> String {
+        let chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        return String((0..<8).map { _ in chars.randomElement()! })
+    }
 }
 
 enum ElectionError: LocalizedError {

@@ -11,6 +11,7 @@ struct VoteSession: Identifiable, Codable, Hashable, Sendable {
     var resultsVisible: Bool
     var allowDelegation: Bool
     var isValid: Bool?
+    var groupId: UUID?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -23,6 +24,7 @@ struct VoteSession: Identifiable, Codable, Hashable, Sendable {
         case resultsVisible = "results_visible"
         case allowDelegation = "allow_delegation"
         case isValid = "is_valid"
+        case groupId = "group_id"
     }
 
     init(id: UUID,
@@ -34,7 +36,8 @@ struct VoteSession: Identifiable, Codable, Hashable, Sendable {
          participantLimit: Int? = nil,
          resultsVisible: Bool = false,
          allowDelegation: Bool = false,
-         isValid: Bool? = nil) {
+         isValid: Bool? = nil,
+         groupId: UUID? = nil) {
         self.id = id
         self.token = token
         self.title = title
@@ -45,6 +48,7 @@ struct VoteSession: Identifiable, Codable, Hashable, Sendable {
         self.resultsVisible = resultsVisible
         self.allowDelegation = allowDelegation
         self.isValid = isValid
+        self.groupId = groupId
     }
 
     init(from decoder: Decoder) throws {
@@ -59,6 +63,7 @@ struct VoteSession: Identifiable, Codable, Hashable, Sendable {
         self.resultsVisible = try container.decodeIfPresent(Bool.self, forKey: .resultsVisible) ?? false
         self.allowDelegation = try container.decodeIfPresent(Bool.self, forKey: .allowDelegation) ?? false
         self.isValid = try container.decodeIfPresent(Bool.self, forKey: .isValid)
+        self.groupId = try container.decodeIfPresent(UUID.self, forKey: .groupId)
     }
 
     private static func decodeOptions(container: KeyedDecodingContainer<CodingKeys>) -> [String] {

@@ -14,8 +14,15 @@ struct RootView: View {
                         .tint(Theme.turquoise)
                 }
             } else if auth.isAuthenticated {
-                AdminDashboardView()
-                    .transition(.opacity)
+                TabView {
+                    Tab("Wahlen", systemImage: "checkmark.seal.fill") {
+                        AdminDashboardView()
+                    }
+                    Tab("Gruppen & Codes", systemImage: "person.3.fill") {
+                        GroupManagementView()
+                    }
+                }
+                .transition(.opacity)
             } else {
                 LoginView()
                     .transition(.opacity)

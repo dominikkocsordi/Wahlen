@@ -4,6 +4,7 @@ struct AdminDashboardView: View {
     @State private var viewModel = AdminViewModel()
     @State private var store = ElectionStore.shared
     @State private var deleteCandidate: VoteSession?
+    @State private var groups: [VoterGroup] = []
 
     var body: some View {
         NavigationSplitView {
@@ -17,6 +18,7 @@ struct AdminDashboardView: View {
         .task {
             await store.bootstrap()
             viewModel.selectFirstIfNeeded()
+            groups = (try? await ElectionService.shared.fetchGroups()) ?? []
         }
         .onChange(of: store.sessions.count) { _, _ in
             viewModel.ensureSelectionValid()
@@ -154,6 +156,7 @@ struct AdminDashboardView: View {
                 detailHeader(session: session, phase: phase)
                 controlPanel(session: session, phase: phase)
                 metaPanel(session: session, result: result)
+                groupPanel(session: session)
                 validityPanel(session: session)
                 if session.allowDelegation {
                     delegationsPanel(result: result)
@@ -248,6 +251,38 @@ struct AdminDashboardView: View {
             StatCardView(title: "Übertragungen",
                          value: "\(result.delegationCount)",
                          tint: Theme.yellow, compact: true)
+        }
+    }
+
+    private func groupPanel(session: VoteSession) -> some View {
+        let assigned = groups.filter { $0.sessionId == session.id }
+        return PanelCard {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeader(title: "Wahlberechtigte Gruppen", accent: Theme.lightBlue)
+                if assigned.isEmpty {
+                    Text("Keine Gruppe zugeordnet. Gruppen lassen sich im Tab «Gruppen & Codes» verwalten.")
+                        .font(AppFont.body(14))
+                        .foregroundStyle(Theme.muted)
+                } else {
+                    ForEach(assigned) { group in
+                        HStack(spacing: 10) {
+                            Image(systemName: "person.3.fill")
+                                .foregroundStyle(Theme.lightBlue)
+                            Text(group.name)
+                                .font(AppFont.body(15, weight: .medium))
+                                .foregroundStyle(Theme.white)
+                            Spacer()
+                            Text("zugeordnet")
+                                .font(AppFont.body(11))
+                                .foregroundStyle(Theme.turquoise)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+        }
+        .task(id: session.id) {
+            groups = (try? await ElectionService.shared.fetchGroups()) ?? []
         }
     }
 
