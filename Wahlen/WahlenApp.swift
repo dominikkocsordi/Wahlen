@@ -1,32 +1,38 @@
-//
-//  WahlenApp.swift
-//  Wahlen
-//
-//  Created by Dominik A. Kocsordi on 31.05.26.
-//
-
 import SwiftUI
-import SwiftData
+import AppKit
 
 @main
 struct WahlenApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    @Environment(\.openWindow) private var openWindow
 
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    init() {
+        _ = SupabaseService.shared
+    }
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        Window("FSBS Wahlen · Admin", id: "admin") {
+            AdminDashboardView()
+                .frame(minWidth: 1280, minHeight: 800)
+                .background(Theme.background)
         }
-        .modelContainer(sharedModelContainer)
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 1440, height: 900)
+        .commands {
+            CommandGroup(after: .newItem) {
+                Button("Beamer-Fenster öffnen") {
+                    openWindow(id: "beamer")
+                }
+                .keyboardShortcut("B", modifiers: [.command, .shift])
+            }
+            CommandGroup(replacing: .help) { EmptyView() }
+        }
+
+        Window("FSBS Wahlen · Beamer", id: "beamer") {
+            BeamerWindow()
+                .frame(minWidth: 1280, minHeight: 720)
+                .background(Theme.background)
+        }
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 1920, height: 1080)
     }
 }
